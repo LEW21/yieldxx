@@ -57,5 +57,39 @@ int main()
 		assert(x == 3);
 	}
 
+	// Test stopping generator.
+	{
+		auto gen = generated<int>([](yield_t<int>&& yield) {
+			yield(1);
+			yield(2);
+			assert(0);
+		});
+
+		auto it = std::begin(gen);
+		assert(*it == 1);
+		++it;
+		assert(*it == 2);
+		// Here it DIES! (Iterator becomes destroyed. Assert(0) does not fire.)
+	}
+
+	// Test stopping generator in a prettier way.
+	{
+		auto gen = generated<int>([](yield_t<int>&& yield) {
+			yield(1);
+			yield(2);
+			assert(0);
+		});
+
+		try
+		{
+			for (auto n : gen)
+				if (n == 2)
+					throw std::exception{};
+			// Here it DIES! (Iterator becomes destroyed. Assert(0) does not fire.)
+		}
+		catch (std::exception&)
+		{}
+	}
+
 	std::cout << "Passed!" << std::endl;
 }

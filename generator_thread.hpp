@@ -64,6 +64,9 @@ generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g, 
 			value.store(std::forward<T>(v));
 			main.notify();
 			gen.wait();
+
+			if (deleted)
+				throw generator_stop();
 		};
 		try
 		{
