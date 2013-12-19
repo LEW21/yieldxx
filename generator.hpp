@@ -20,6 +20,8 @@ public:
 	typename std::remove_reference<T>::type* operator->() const {return &**this;}
 
 	generator& operator++();
+
+	explicit operator bool() {return bool(p);}
 };
 
 template <class T>

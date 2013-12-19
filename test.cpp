@@ -91,5 +91,17 @@ int main()
 		{}
 	}
 
+	// Test operator bool().
+	{
+		auto gen = generated<int>([](yield_t<int>&& yield) {
+			yield(1);
+		});
+
+		auto it = std::begin(gen);
+		assert(it);
+		++it;
+		assert(!it);
+	}
+
 	std::cout << "Passed!" << std::endl;
 }
