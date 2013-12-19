@@ -1,19 +1,17 @@
 #pragma once
 
 #include "fwd.hpp"
-#include "store.hpp"
 #include <thread>
 #include <mutex>
-#include "store.hpp"
-#include "optional.hpp"
 
-template <class T>
-struct generator_thread_impl
+struct coroutine
 {
-	generator_thread_impl(const generator_function<T>& gen);
-	~generator_thread_impl();
+	using yield = std::function<void()>;
 
-	optional<T> operator()();
+	coroutine(std::function<void(yield&&)>&&);
+	~coroutine();
+
+	bool operator()();
 
 private:
 	class binary_semaphore
@@ -27,7 +25,6 @@ private:
 		void wait() {mtx.lock();}
 	};
 
-	store_t<T> value;
 	bool deleted = false;
 	bool done = false;
 
@@ -37,16 +34,14 @@ private:
 	std::thread thread;
 };
 
-template <class T>
-generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g)
-	: thread{[this, g]() {
+coroutine::coroutine(std::function<void(coroutine::yield&&)>&& f)
+	: thread{[this, f]() {
 		gen.wait();
-		auto yield = [this](T&& v)
+		auto yield = [this]()
 		{
 			if (deleted)
 				throw generator_stop();
 
-			value = std::forward<T>(v);
 			main.notify();
 			gen.wait();
 
@@ -55,7 +50,7 @@ generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g)
 		};
 		try
 		{
-			g(std::move(yield));
+			f(std::move(yield));
 		}
 		catch (generator_stop&) {}
 
@@ -64,19 +59,14 @@ generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g)
 	}}
 {}
 
-template <class T>
-optional<T> generator_thread_impl<T>::operator()()
+bool coroutine::operator()()
 {
 	gen.notify();
 	main.wait();
-	if (!done)
-		return std::forward<T>(*value);
-	else
-		return {};
+	return !done;
 }
 
-template <class T>
-generator_thread_impl<T>::~generator_thread_impl()
+coroutine::~coroutine()
 {
 	deleted = true;
 	while (!done)
