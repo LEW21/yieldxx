@@ -1,76 +1,22 @@
 #pragma once
 
-#include "fwd.hpp"
-#include <thread>
-#include <mutex>
+#include <functional>
+#include <memory>
+
+struct coroutine_impl;
 
 struct coroutine
 {
 	using yield = std::function<void()>;
+	using body  = std::function<void(yield&&)>;
 
-	coroutine(std::function<void(yield&&)>&&);
+	class stop: public std::exception {};
+
+	coroutine(body&&);
 	~coroutine();
-
 	bool operator()();
+	explicit operator bool() { return bool(p); }
 
 private:
-	class binary_semaphore
-	{
-		std::mutex mtx;
-
-	public:
-		binary_semaphore() {mtx.lock();}
-
-		void notify() {mtx.unlock();}
-		void wait() {mtx.lock();}
-	};
-
-	bool deleted = false;
-	bool done = false;
-
-	binary_semaphore gen;
-	binary_semaphore main;
-
-	std::thread thread;
+	std::unique_ptr<coroutine_impl> p;
 };
-
-coroutine::coroutine(std::function<void(coroutine::yield&&)>&& f)
-	: thread{[this, f]() {
-		gen.wait();
-		auto yield = [this]()
-		{
-			if (deleted)
-				throw generator_stop();
-
-			main.notify();
-			gen.wait();
-
-			if (deleted)
-				throw generator_stop();
-		};
-		try
-		{
-			f(std::move(yield));
-		}
-		catch (generator_stop&) {}
-
-		done = true;
-		main.notify();
-	}}
-{}
-
-bool coroutine::operator()()
-{
-	gen.notify();
-	main.wait();
-	return !done;
-}
-
-coroutine::~coroutine()
-{
-	deleted = true;
-	while (!done)
-		(*this)();
-	if (thread.joinable())
-		thread.join();
-}
