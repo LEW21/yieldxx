@@ -10,7 +10,7 @@ Prettiest C++ generator/coroutine implementation.
 template <class T>
 auto range(T min, T max) -> generated<T>
 {
-	return generated<T>([=](yield_t<T>&& yield) {
+	return generated<T>([=](generator<T>::yield&& yield) {
 		for (T i = min; i < max; ++i)
 			yield(i);
 	});
