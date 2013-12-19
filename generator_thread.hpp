@@ -3,6 +3,7 @@
 #include "fwd.hpp"
 #include <thread>
 #include <mutex>
+#include "store.hpp"
 
 template <class T>
 struct generator_thread_impl
@@ -14,24 +15,6 @@ struct generator_thread_impl
 	T& get();
 
 private:
-	template <class U>
-	class store_t
-	{
-		U _v;
-	public:
-		void store(U&& v) {_v = std::move(v);}
-		U& load() {return _v;}
-	};
-
-	template <class U>
-	class store_t<U&>
-	{
-		U* _v;
-	public:
-		void store(U& v) {_v = &v;}
-		U& load() {return *_v;}
-	};
-
 	class binary_semaphore
 	{
 		std::mutex mtx;
@@ -61,7 +44,7 @@ generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g, 
 			if (deleted)
 				throw generator_stop();
 
-			value.store(std::forward<T>(v));
+			value = std::forward<T>(v);
 			main.notify();
 			gen.wait();
 
@@ -93,7 +76,7 @@ bool generator_thread_impl<T>::next()
 template <class T>
 T& generator_thread_impl<T>::get()
 {
-	return value.load();
+	return *value;
 }
 
 template <class T>
