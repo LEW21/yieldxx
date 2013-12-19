@@ -23,7 +23,7 @@ int main()
 	// Test empty generator.
 	{
 		auto x = 0;
-		for (auto& t : generated<int>([](yield_t<int>&& yield) {}))
+		for (auto& t : generated<int>([](generator<int>::yield&& yield) {}))
 			++x;
 		assert(x == 0);
 	}
@@ -31,7 +31,7 @@ int main()
 	// Test subgenerator.
 	{
 		auto i = 0;
-		for (auto& n : generated<int>([](yield_t<int>&& yield) {
+		for (auto& n : generated<int>([](generator<int>::yield&& yield) {
 			assert((yield << range(0, 5)) == 5);
 		}))
 			assert(i++ == n);
@@ -41,7 +41,7 @@ int main()
 	// Test not-copyable type.
 	{
 		auto x = 0;
-		for (auto& t : generated<std::thread>([](yield_t<std::thread>&& yield) {
+		for (auto& t : generated<std::thread>([](generator<std::thread>::yield&& yield) {
 			yield(std::thread{});
 		}))
 			++x;
@@ -51,7 +51,7 @@ int main()
 	// Test reference.
 	{
 		auto x = 5;
-		for (auto& i : generated<int&>([&x](yield_t<int&>&& yield) {
+		for (auto& i : generated<int&>([&x](generator<int&>::yield&& yield) {
 			yield(x);
 		}))
 			i = 3;
@@ -60,7 +60,7 @@ int main()
 
 	// Test stopping generator.
 	{
-		auto gen = generated<int>([](yield_t<int>&& yield) {
+		auto gen = generated<int>([](generator<int>::yield&& yield) {
 			yield(1);
 			yield(2);
 			assert(0);
@@ -75,7 +75,7 @@ int main()
 
 	// Test stopping generator in a prettier way.
 	{
-		auto gen = generated<int>([](yield_t<int>&& yield) {
+		auto gen = generated<int>([](generator<int>::yield&& yield) {
 			yield(1);
 			yield(2);
 			assert(0);
@@ -94,7 +94,7 @@ int main()
 
 	// Test operator bool().
 	{
-		auto gen = generated<int>([](yield_t<int>&& yield) {
+		auto gen = generated<int>([](generator<int>::yield&& yield) {
 			yield(1);
 		});
 

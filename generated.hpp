@@ -6,19 +6,20 @@ template <class T>
 class generated
 {
 public:
-	generator_function<T> gen;
+	using generator = ::generator<T>;
 
-	generated(const generator_function<T>& g): gen(g) {}
-	generated(generator_function<T>&& g): gen(std::move(g)) {}
+	typename generator::body gen;
 
-	operator generator_function<T>() {return gen;}
+	generated(typename generator::body g): gen(std::move(g)) {}
 
-	generator<T> begin() const {return generator<T>(gen);}
-	generator<T> end() const {return generator<T>();}
+	operator typename generator::body() {return gen;}
+
+	generator begin() const {return generator(gen);}
+	generator end() const {return generator();}
 };
 
 template <class T>
-int operator<<(yield_t<T>& yield, const generated<T>& gen)
+int operator<<(typename generator<T>::yield& yield, const generated<T>& gen)
 {
 	int yielded = 0;
 	gen.gen([&](const T& v)

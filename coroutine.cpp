@@ -5,7 +5,7 @@
 
 struct coroutine_impl
 {
-	coroutine_impl(coroutine::body&& f);
+	coroutine_impl(coroutine::body f);
 	bool operator()();
 	~coroutine_impl();
 
@@ -37,7 +37,7 @@ coroutine::coroutine(coroutine&& other)
 	: p(std::move(other.p))
 {}
 
-coroutine::coroutine(coroutine::body&& f)
+coroutine::coroutine(coroutine::body f)
 	: p(new coroutine_impl(std::move(f)))
 {}
 
@@ -56,7 +56,7 @@ bool coroutine::operator()()
 coroutine::~coroutine()
 {}
 
-coroutine_impl::coroutine_impl(coroutine::body&& f)
+coroutine_impl::coroutine_impl(coroutine::body f)
 	: thread{[this, f]() {
 		gen.wait();
 		auto yield = [this]()

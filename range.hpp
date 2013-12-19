@@ -4,7 +4,7 @@
 template <class T>
 auto range(T min, T max) -> generated<T>
 {
-	return generated<T>([=](yield_t<T>&& yield) {
+	return generated<T>([=](typename generator<T>::yield&& yield) {
 		for (T i = min; i < max; ++i)
 			yield(i);
 	});
@@ -13,7 +13,7 @@ auto range(T min, T max) -> generated<T>
 template <class T, class TStep>
 auto range(T min, T max, TStep step) -> generated<T>
 {
-	return generated<T>([=](yield_t<T>&& yield) {
+	return generated<T>([=](typename generator<T>::yield&& yield) {
 		for (T i = min; (step > 0) ? i < max : i > max; i += step)
 			yield(i);
 	});

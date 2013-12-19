@@ -15,7 +15,7 @@ struct coroutine
 	coroutine();
 	coroutine(coroutine&& other);
 
-	coroutine(body&&);
+	coroutine(body);
 	~coroutine();
 
 	bool operator()();
