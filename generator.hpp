@@ -8,7 +8,7 @@
 template <class T>
 class generator
 {
-	std::unique_ptr<coroutine> coro;
+	coroutine coro;
 	store_t<T> value;
 
 	template <class U>
@@ -30,12 +30,12 @@ public:
 
 template <class T>
 generator<T>::generator(const generator_function<T>& gen)
-	: coro(new coroutine{[this, gen](coroutine::yield&& yield) {
+	: coro{[this, gen](coroutine::yield&& yield) {
 		gen([this, yield](T&& v){
 			value = std::forward<T>(v);
 			yield();
 		});
-	}})
+	}}
 {
 	++(*this);
 }
@@ -61,13 +61,7 @@ auto generator<T>::operator*() const -> const T&
 template <class T>
 generator<T>& generator<T>::operator++()
 {
-	if (!coro)
-		throw std::out_of_range("generator::operator++");
-
-	auto v = (*coro)();
-	if (!v)
-		coro = {};
-
+	coro();
 	return *this;
 }
 

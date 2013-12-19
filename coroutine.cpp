@@ -30,13 +30,27 @@ private:
 	std::thread thread;
 };
 
+coroutine::coroutine()
+{}
+
+coroutine::coroutine(coroutine&& other)
+	: p(std::move(other.p))
+{}
+
 coroutine::coroutine(coroutine::body&& f)
 	: p(new coroutine_impl(std::move(f)))
 {}
 
 bool coroutine::operator()()
 {
-	return (*p)();
+	if (!p)
+		throw std::out_of_range("coroutine::operator()");
+
+	auto ok = (*p)();
+	if (!ok)
+		p = {};
+
+	return ok;
 }
 
 coroutine::~coroutine()
