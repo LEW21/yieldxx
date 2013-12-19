@@ -1,18 +1,19 @@
 #pragma once
 
 #include "fwd.hpp"
+#include "store.hpp"
 #include <thread>
 #include <mutex>
 #include "store.hpp"
+#include "optional.hpp"
 
 template <class T>
 struct generator_thread_impl
 {
-	generator_thread_impl(const generator_function<T>& gen, bool& not_empty);
+	generator_thread_impl(const generator_function<T>& gen);
 	~generator_thread_impl();
 
-	bool next();
-	T& get();
+	optional<T> operator()();
 
 private:
 	class binary_semaphore
@@ -28,7 +29,7 @@ private:
 
 	store_t<T> value;
 	bool deleted = false;
-	bool working = true;
+	bool done = false;
 
 	binary_semaphore gen;
 	binary_semaphore main;
@@ -37,8 +38,9 @@ private:
 };
 
 template <class T>
-generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g, bool& not_empty)
+generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g)
 	: thread{[this, g]() {
+		gen.wait();
 		auto yield = [this](T&& v)
 		{
 			if (deleted)
@@ -57,34 +59,28 @@ generator_thread_impl<T>::generator_thread_impl(const generator_function<T>& g, 
 		}
 		catch (generator_stop&) {}
 
-		working = false;
+		done = true;
 		main.notify();
 	}}
-{
-	main.wait();
-	not_empty = working;
-}
+{}
 
 template <class T>
-bool generator_thread_impl<T>::next()
+optional<T> generator_thread_impl<T>::operator()()
 {
 	gen.notify();
 	main.wait();
-	return working;
-}
-
-template <class T>
-T& generator_thread_impl<T>::get()
-{
-	return *value;
+	if (!done)
+		return std::forward<T>(*value);
+	else
+		return {};
 }
 
 template <class T>
 generator_thread_impl<T>::~generator_thread_impl()
 {
 	deleted = true;
-	while (working)
-		next();
+	while (!done)
+		(*this)();
 	if (thread.joinable())
 		thread.join();
 }

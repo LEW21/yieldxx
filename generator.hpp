@@ -3,11 +3,13 @@
 #include "fwd.hpp"
 #include <memory>
 #include "generator_impl.hpp"
+#include "store.hpp"
 
 template <class T>
 class generator
 {
 	std::unique_ptr<generator_impl<T>> p;
+	store_t<T> value;
 
 	template <class U>
 	friend bool operator==(const generator<U>& a, const generator<U>& b);
@@ -28,11 +30,9 @@ public:
 
 template <class T>
 generator<T>::generator(const generator_function<T>& gen)
+	: p(new generator_impl<T>(gen))
 {
-	bool not_empty;
-	p.reset(new generator_impl<T>(gen, not_empty));
-	if (!not_empty)
-		p = {};
+	++(*this);
 }
 
 template <class T>
@@ -41,7 +41,7 @@ auto generator<T>::operator*() -> T&
 	if (!p)
 		throw std::out_of_range("generator::operator*");
 
-	return p->get();
+	return *value;
 }
 
 template <class T>
@@ -50,7 +50,7 @@ auto generator<T>::operator*() const -> const T&
 	if (!p)
 		throw std::out_of_range("generator::operator*");
 
-	return p->get();
+	return *value;
 }
 
 template <class T>
@@ -59,8 +59,11 @@ generator<T>& generator<T>::operator++()
 	if (!p)
 		throw std::out_of_range("generator::operator++");
 
-	if (!p->next())
+	auto v = (*p)();
+	if (!v)
 		p = {};
+	else
+		value = std::forward<T>(*v);
 
 	return *this;
 }
