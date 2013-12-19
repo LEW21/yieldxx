@@ -16,8 +16,10 @@ public:
 	generator() = default;
 	generator(const generator_function<T>& gen);
 
-	T& operator*() const;
-	typename std::remove_reference<T>::type* operator->() const {return &**this;}
+	auto operator*() -> T&;
+	auto operator*() const -> const T&;
+	auto operator->() -> typename std::remove_reference<T>::type* {return &**this;}
+	auto operator->() const -> const typename std::remove_reference<T>::type* {return &**this;}
 
 	generator& operator++();
 
@@ -34,7 +36,16 @@ generator<T>::generator(const generator_function<T>& gen)
 }
 
 template <class T>
-T& generator<T>::operator*() const
+auto generator<T>::operator*() -> T&
+{
+	if (!p)
+		throw std::out_of_range("generator::operator*");
+
+	return p->get();
+}
+
+template <class T>
+auto generator<T>::operator*() const -> const T&
 {
 	if (!p)
 		throw std::out_of_range("generator::operator*");
