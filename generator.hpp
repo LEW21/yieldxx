@@ -24,8 +24,8 @@ struct generator
 	explicit operator bool() {return bool(coro);}
 
 private:
+	std::unique_ptr<store_t<T>> value;
 	coroutine coro;
-	store_t<T> value;
 
 	template <class U>
 	friend bool operator==(const generator<U>& a, const generator<U>& b);
@@ -33,9 +33,10 @@ private:
 
 template <class T>
 generator<T>::generator(generator<T>::body gen)
-	: coro{[this, gen](coroutine::yield&& yield) {
-		gen([this, yield](T&& v){
-			value = std::forward<T>(v);
+	: value{new store_t<T>{}}
+	, coro{[value = &*value, gen](coroutine::yield&& yield) {
+		gen([value, yield](T&& v){
+			*value = std::forward<T>(v);
 			yield();
 		});
 	}}
@@ -49,7 +50,7 @@ auto generator<T>::operator*() -> T&
 	if (!coro)
 		throw std::out_of_range("generator::operator*");
 
-	return *value;
+	return **value;
 }
 
 template <class T>
@@ -58,7 +59,7 @@ auto generator<T>::operator*() const -> const T&
 	if (!coro)
 		throw std::out_of_range("generator::operator*");
 
-	return *value;
+	return **value;
 }
 
 template <class T>

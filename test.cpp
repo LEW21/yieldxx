@@ -104,5 +104,20 @@ int main()
 		assert(!it);
 	}
 
+	// Test move.
+	{
+		auto gen = generated<int>{[](generator<int>::yield&& yield) {
+			yield(1);
+			yield(2);
+			yield(3);
+		}};
+
+		auto it = std::begin(gen);
+		assert(*it == 1);
+		auto it2 = std::move(it);
+		++it2;
+		assert(*it2 == 2);
+	}
+
 	std::cout << "Passed!" << std::endl;
 }
