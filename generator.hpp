@@ -2,13 +2,13 @@
 
 #include "fwd.hpp"
 #include <memory>
-#include "generator_impl.hpp"
+#include "coroutine.hpp"
 #include "store.hpp"
 
 template <class T>
 class generator
 {
-	std::unique_ptr<generator_impl<T>> p;
+	std::unique_ptr<coroutine> coro;
 	store_t<T> value;
 
 	template <class U>
@@ -25,12 +25,17 @@ public:
 
 	generator& operator++();
 
-	explicit operator bool() {return bool(p);}
+	explicit operator bool() {return bool(coro);}
 };
 
 template <class T>
 generator<T>::generator(const generator_function<T>& gen)
-	: p(new generator_impl<T>(gen))
+	: coro(new coroutine{[this, gen](coroutine::yield&& yield) {
+		gen([this, yield](T&& v){
+			value = std::forward<T>(v);
+			yield();
+		});
+	}})
 {
 	++(*this);
 }
@@ -38,7 +43,7 @@ generator<T>::generator(const generator_function<T>& gen)
 template <class T>
 auto generator<T>::operator*() -> T&
 {
-	if (!p)
+	if (!coro)
 		throw std::out_of_range("generator::operator*");
 
 	return *value;
@@ -47,7 +52,7 @@ auto generator<T>::operator*() -> T&
 template <class T>
 auto generator<T>::operator*() const -> const T&
 {
-	if (!p)
+	if (!coro)
 		throw std::out_of_range("generator::operator*");
 
 	return *value;
@@ -56,20 +61,18 @@ auto generator<T>::operator*() const -> const T&
 template <class T>
 generator<T>& generator<T>::operator++()
 {
-	if (!p)
+	if (!coro)
 		throw std::out_of_range("generator::operator++");
 
-	auto v = (*p)();
+	auto v = (*coro)();
 	if (!v)
-		p = {};
-	else
-		value = std::forward<T>(*v);
+		coro = {};
 
 	return *this;
 }
 
 template <class T>
-bool operator==(const generator<T>& a, const generator<T>& b) {return a.p == b.p;}
+bool operator==(const generator<T>& a, const generator<T>& b) {return a.coro == b.coro;}
 
 template <class T>
 bool operator!=(const generator<T>& a, const generator<T>& b) {return !(a == b);}
