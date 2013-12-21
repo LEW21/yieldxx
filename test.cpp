@@ -119,5 +119,23 @@ int main()
 		assert(*it2 == 2);
 	}
 
+	// Test rethrow.
+	{
+		auto gen = generated<int>{[](generator<int>::yield&& yield) {
+			yield(1);
+			throw std::runtime_error{"So much error"};
+		}};
+
+		auto it = std::begin(gen);
+		assert(*it == 1);
+		try
+		{
+			++it;
+			assert(false);
+		}
+		catch (std::runtime_error& e)
+		{}
+	}
+
 	std::cout << "Passed!" << std::endl;
 }

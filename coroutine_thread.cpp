@@ -2,10 +2,11 @@
 
 #include <thread>
 #include <mutex>
+#include <cassert>
 
 struct coroutine_impl
 {
-	coroutine_impl(coroutine::body f);
+	coroutine_impl(coroutine::body);
 	bool operator()();
 	~coroutine_impl();
 
@@ -23,6 +24,7 @@ private:
 
 	bool deleted = false;
 	bool done = false;
+	std::exception_ptr exception;
 
 	binary_semaphore gen;
 	binary_semaphore main;
@@ -56,8 +58,8 @@ bool coroutine::operator()()
 coroutine::~coroutine()
 {}
 
-coroutine_impl::coroutine_impl(coroutine::body f)
-	: thread{[this, f]() {
+coroutine_impl::coroutine_impl(coroutine::body body)
+	: thread{[this, body]() {
 		gen.wait();
 		auto yield = [this]()
 		{
@@ -72,9 +74,10 @@ coroutine_impl::coroutine_impl(coroutine::body f)
 		};
 		try
 		{
-			f(std::move(yield));
+			body(std::move(yield));
 		}
 		catch (coroutine::stop&) {}
+		catch (...) { exception = std::current_exception(); }
 
 		done = true;
 		main.notify();
@@ -83,8 +86,10 @@ coroutine_impl::coroutine_impl(coroutine::body f)
 
 bool coroutine_impl::operator()()
 {
+	assert(!done);
 	gen.notify();
 	main.wait();
+	if (exception) std::rethrow_exception(exception);
 	return !done;
 }
 
