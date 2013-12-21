@@ -1,5 +1,7 @@
 #pragma once
 
+#include "generated.hpp"
+
 // [min, max) - like in Python
 template <class T>
 auto range(T min, T max) -> generated<T>
