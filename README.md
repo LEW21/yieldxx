@@ -33,4 +33,4 @@ Requirements:
 Problems:
 ---------
 
-* It's implemented with threads. Yes, really. I said prettiest, not fastest. Want speed? Use boost.coroutine, or implement your own fiber support - it can be done without changing the API.
+* None.
