@@ -6,6 +6,7 @@
 #include <boost/coroutine/stack_context.hpp>
 #include <boost/coroutine/stack_allocator.hpp>
 #include <boost/coroutine/detail/coroutine_context.hpp>
+#include <boost/coroutine/stack_traits.hpp>
 
 using namespace boost::coroutines;
 using boost::coroutines::detail::coroutine_context;
@@ -16,7 +17,7 @@ struct stack_tuple
 	stack_allocator alloc;
 
 	stack_tuple()
-	{ alloc.allocate(ctx, stack_allocator::default_stacksize()); }
+	{ alloc.allocate(ctx, stack_traits::default_size()); }
 
 	~stack_tuple()
 	{ alloc.deallocate(ctx); }
@@ -71,7 +72,7 @@ void trampoline(intptr_t vp);
 
 coroutine_impl::coroutine_impl(coroutine::body body)
 	: body(std::move(body))
-	, gen{trampoline, &stack.ctx}
+	, gen{trampoline, stack.ctx}
 {
 }
 
