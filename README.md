@@ -1,16 +1,14 @@
-cpp-yield
-=========
-
+# yieldxx
 Prettiest C++ generator/coroutine implementation.
 
 ```c++
 #include <iostream>
-#include <generated.hpp>
+#include "yieldxx/generated.hpp"
 
 template <class T>
-auto range(T min, T max) -> generated<T>
+auto range(T min, T max) -> xx::generated<T>
 {
-	return generated<T>([=](generator<T>::yield&& yield) {
+	return xx::generated<T>([=](typename xx::generator<T>::yield&& yield) {
 		for (T i = min; i < max; ++i)
 			yield(i);
 	});
@@ -25,13 +23,22 @@ int main()
 
 Look at test.cpp for more features.
 
-Requirements:
--------------
+## Usage
+```sh
+git submodule add https://github.com/LEW21/yieldxx.git
+```
 
-* Fully C++11-compliant compiler. It might work on not fully compliant, it might be ported to work on C++03 compilers, but... it's easier to find a decent compiler, and stop torturing yourself.
+* Add coroutine_boost.cpp (with -lboost_coroutine) or coroutine_thread.cpp (with -pthread / whatever is your std::thread using) to your build system.
 
-Performance:
-------------
+```c++
+#include "yieldxx/generated.hpp"
+```
+
+## Requirements
+
+* Fully C++14-compliant compiler. Tested on gcc 5.2 and clang 3.7.
+
+## Performance
 
 Duration of 1 iteration on AMD Phenom II X4 920:
 
