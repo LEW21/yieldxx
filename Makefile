@@ -2,7 +2,7 @@
 CXX=g++
 CXX=clang++
 
-.PHONY: test_thread test_boost speedtest_thread speedtest_boost
+.PHONY: test_thread test_boost speedtest_thread speedtest_boost test
 
 test: test_thread test_boost speedtest_thread speedtest_boost
 
