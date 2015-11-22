@@ -4,6 +4,8 @@
 #include <iostream>
 #include <thread>
 
+using namespace xx;
+
 int main()
 {
 	// Test simple range. 5 times.

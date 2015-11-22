@@ -3,28 +3,31 @@
 #include <functional>
 #include <memory>
 
-struct coroutine_impl;
-
-struct coroutine
+namespace xx
 {
-	using yield = std::function<void()>;
-	using body  = std::function<void(yield&&)>;
+	struct coroutine_impl;
 
-	class stop: public std::exception {};
+	struct coroutine
+	{
+		using yield = std::function<void()>;
+		using body  = std::function<void(yield&&)>;
 
-	coroutine();
-	coroutine(coroutine&& other);
+		class stop: public std::exception {};
 
-	coroutine(body);
-	~coroutine();
+		coroutine();
+		coroutine(coroutine&& other);
 
-	bool operator()();
-	explicit operator bool() const { return bool(p); }
+		coroutine(body);
+		~coroutine();
 
-private:
-	std::unique_ptr<coroutine_impl> p;
-	friend bool operator==(const coroutine& a, const coroutine& b);
-};
+		bool operator()();
+		explicit operator bool() const { return bool(p); }
 
-inline bool operator==(const coroutine& a, const coroutine& b) {return a.p == b.p;}
-inline bool operator!=(const coroutine& a, const coroutine& b) {return !(a == b);}
+	private:
+		std::unique_ptr<coroutine_impl> p;
+		friend bool operator==(const coroutine& a, const coroutine& b);
+	};
+
+	inline bool operator==(const coroutine& a, const coroutine& b) {return a.p == b.p;}
+	inline bool operator!=(const coroutine& a, const coroutine& b) {return !(a == b);}
+}

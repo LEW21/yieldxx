@@ -4,100 +4,103 @@
 #include <mutex>
 #include <cassert>
 
-struct coroutine_impl
+namespace xx
 {
-	coroutine_impl(coroutine::body);
-	bool operator()();
-	~coroutine_impl();
-
-private:
-	class binary_semaphore
+	struct coroutine_impl
 	{
-		std::mutex mtx;
+		coroutine_impl(coroutine::body);
+		bool operator()();
+		~coroutine_impl();
 
-	public:
-		binary_semaphore() {mtx.lock();}
+	private:
+		class binary_semaphore
+		{
+			std::mutex mtx;
 
-		void notify() {mtx.unlock();}
-		void wait() {mtx.lock();}
+		public:
+			binary_semaphore() {mtx.lock();}
+
+			void notify() {mtx.unlock();}
+			void wait() {mtx.lock();}
+		};
+
+		bool deleted = false;
+		bool done = false;
+		std::exception_ptr exception;
+
+		binary_semaphore gen;
+		binary_semaphore main;
+
+		std::thread thread;
 	};
 
-	bool deleted = false;
-	bool done = false;
-	std::exception_ptr exception;
+	coroutine::coroutine()
+	{}
 
-	binary_semaphore gen;
-	binary_semaphore main;
+	coroutine::coroutine(coroutine&& other)
+		: p(std::move(other.p))
+	{}
 
-	std::thread thread;
-};
+	coroutine::coroutine(coroutine::body f)
+		: p(new coroutine_impl(std::move(f)))
+	{}
 
-coroutine::coroutine()
-{}
+	bool coroutine::operator()()
+	{
+		if (!p)
+			throw std::out_of_range("coroutine::operator()");
 
-coroutine::coroutine(coroutine&& other)
-	: p(std::move(other.p))
-{}
+		auto ok = (*p)();
+		if (!ok)
+			p = {};
 
-coroutine::coroutine(coroutine::body f)
-	: p(new coroutine_impl(std::move(f)))
-{}
+		return ok;
+	}
 
-bool coroutine::operator()()
-{
-	if (!p)
-		throw std::out_of_range("coroutine::operator()");
+	coroutine::~coroutine()
+	{}
 
-	auto ok = (*p)();
-	if (!ok)
-		p = {};
-
-	return ok;
-}
-
-coroutine::~coroutine()
-{}
-
-coroutine_impl::coroutine_impl(coroutine::body body)
-	: thread{[this, body]() {
-		gen.wait();
-		auto yield = [this]()
-		{
-			if (deleted)
-				throw coroutine::stop();
-
-			main.notify();
+	coroutine_impl::coroutine_impl(coroutine::body body)
+		: thread{[this, body]() {
 			gen.wait();
+			auto yield = [this]()
+			{
+				if (deleted)
+					throw coroutine::stop();
 
-			if (deleted)
-				throw coroutine::stop();
-		};
-		try
-		{
-			body(std::move(yield));
-		}
-		catch (coroutine::stop&) {}
-		catch (...) { exception = std::current_exception(); }
+				main.notify();
+				gen.wait();
 
-		done = true;
-		main.notify();
-	}}
-{}
+				if (deleted)
+					throw coroutine::stop();
+			};
+			try
+			{
+				body(std::move(yield));
+			}
+			catch (coroutine::stop&) {}
+			catch (...) { exception = std::current_exception(); }
 
-bool coroutine_impl::operator()()
-{
-	assert(!done);
-	gen.notify();
-	main.wait();
-	if (exception) std::rethrow_exception(exception);
-	return !done;
-}
+			done = true;
+			main.notify();
+		}}
+	{}
 
-coroutine_impl::~coroutine_impl()
-{
-	deleted = true;
-	while (!done)
-		(*this)();
-	if (thread.joinable())
-		thread.join();
+	bool coroutine_impl::operator()()
+	{
+		assert(!done);
+		gen.notify();
+		main.wait();
+		if (exception) std::rethrow_exception(exception);
+		return !done;
+	}
+
+	coroutine_impl::~coroutine_impl()
+	{
+		deleted = true;
+		while (!done)
+			(*this)();
+		if (thread.joinable())
+			thread.join();
+	}
 }
