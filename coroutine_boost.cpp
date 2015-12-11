@@ -10,19 +10,20 @@
 
 using namespace boost::coroutines;
 using boost::coroutines::detail::coroutine_context;
+using boost::coroutines::detail::preallocated;
 
 namespace xx
 {
 	struct stack_tuple
 	{
-		stack_context   ctx;
+		preallocated    ctx;
 		stack_allocator alloc;
 
 		stack_tuple()
-		{ alloc.allocate(ctx, stack_traits::default_size()); }
+		{ alloc.allocate(ctx.sctx, stack_traits::default_size()); ctx.size = ctx.sctx.size; ctx.sp = ctx.sctx.sp; }
 
 		~stack_tuple()
-		{ alloc.deallocate(ctx); }
+		{ alloc.deallocate(ctx.sctx); }
 	};
 
 	struct coroutine_impl
