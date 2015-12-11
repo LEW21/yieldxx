@@ -15,9 +15,10 @@ namespace xx
 		class stop: public std::exception {};
 
 		coroutine();
-		coroutine(coroutine&& other);
-
 		coroutine(body);
+
+		coroutine(coroutine&&);
+		coroutine& operator=(coroutine&&);
 		~coroutine();
 
 		bool operator()();

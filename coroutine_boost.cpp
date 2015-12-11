@@ -55,6 +55,11 @@ namespace xx
 		: p(new coroutine_impl(std::move(f)))
 	{}
 
+	coroutine& coroutine::operator=(coroutine&& other)
+	{
+		p = std::move(other.p);
+	}
+
 	bool coroutine::operator()()
 	{
 		if (!p)
