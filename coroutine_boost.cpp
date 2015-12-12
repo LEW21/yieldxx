@@ -3,27 +3,52 @@
 #include <exception>
 #include <cassert>
 
-#include <boost/coroutine/stack_context.hpp>
-#include <boost/coroutine/stack_allocator.hpp>
-#include <boost/coroutine/detail/coroutine_context.hpp>
-#include <boost/coroutine/stack_traits.hpp>
-
-using namespace boost::coroutines;
-using boost::coroutines::detail::coroutine_context;
-using boost::coroutines::detail::preallocated;
+#include <boost/context/all.hpp>
 
 namespace xx
 {
+	struct coroutine_context
+	{
+		using ctx_fn = void(void*);
+		using ctx_fn_intptr = void(intptr_t);
+
+		boost::context::stack_context sctx;
+		boost::context::fcontext_t    fctx = nullptr;
+
+		coroutine_context() = default;
+
+		coroutine_context(ctx_fn fn, boost::context::stack_context sctx)
+			: sctx(sctx)
+			, fctx(boost::context::make_fcontext(sctx.sp, sctx.size, (ctx_fn_intptr*) fn))
+		{}
+
+		void* jump(coroutine_context& other, void* param = 0)
+		{
+			#if defined(BOOST_USE_SEGMENTED_STACKS)
+			__splitstack_getcontext(sctx.segments_ctx);
+			__splitstack_setcontext(other.sctx.segments_ctx);
+			#endif
+			return (void*) boost::context::jump_fcontext(&fctx, other.fctx, (intptr_t) param);
+		}
+	};
+
 	struct stack_tuple
 	{
-		preallocated    ctx;
+		# if defined(BOOST_USE_SEGMENTED_STACKS)
+		using stack_allocator = boost::context::segmented_stack;
+		#else
+		using stack_allocator = boost::context::fixedsize_stack;
+		#endif
+
 		stack_allocator alloc;
+		boost::context::stack_context ctx;
 
 		stack_tuple()
-		{ alloc.allocate(ctx.sctx, stack_traits::default_size()); ctx.size = ctx.sctx.size; ctx.sp = ctx.sctx.sp; }
+			: ctx(alloc.allocate())
+		{}
 
 		~stack_tuple()
-		{ alloc.deallocate(ctx.sctx); }
+		{ alloc.deallocate(ctx); }
 	};
 
 	struct coroutine_impl
@@ -76,7 +101,7 @@ namespace xx
 	coroutine::~coroutine()
 	{}
 
-	void trampoline(intptr_t vp);
+	void trampoline(void* vp);
 
 	coroutine_impl::coroutine_impl(coroutine::body body)
 		: body(std::move(body))
@@ -85,7 +110,7 @@ namespace xx
 	}
 
 	// Run in callee.
-	void trampoline(intptr_t vp)
+	void trampoline(void* vp)
 	{
 		reinterpret_cast<coroutine_impl*>(vp)->run();
 	}
@@ -99,7 +124,7 @@ namespace xx
 				throw coroutine::stop();
 
 
-			gen.jump(main, {}, true);
+			gen.jump(main, {});
 
 			if (deleted)
 				throw coroutine::stop();
@@ -112,7 +137,7 @@ namespace xx
 		catch (...) { exception = std::current_exception(); }
 
 		done = true;
-		gen.jump(main, {}, true);
+		gen.jump(main, {});
 	}
 
 
@@ -120,7 +145,7 @@ namespace xx
 	{
 		assert(!done);
 		// Passing this, as the trampoline expects it as a parameter. (Used only on the first call.)
-		main.jump(gen, reinterpret_cast<intptr_t>(this), true);
+		main.jump(gen, this);
 		if (exception) std::rethrow_exception(exception);
 		return !done;
 	}

@@ -28,7 +28,7 @@ Look at test.cpp for more features.
 git submodule add https://github.com/LEW21/yieldxx.git
 ```
 
-* Add coroutine_boost.cpp (with -lboost_coroutine) or coroutine_thread.cpp (with -pthread / whatever is your std::thread using) to your build system.
+* Add coroutine_boost.cpp (with -lboost_context) or coroutine_thread.cpp (with -pthread / whatever is your std::thread using) to your build system.
 
 ```c++
 #include "yieldxx/generated.hpp"
@@ -37,6 +37,7 @@ git submodule add https://github.com/LEW21/yieldxx.git
 ## Requirements
 
 * Fully C++14-compliant compiler. Tested on gcc 5.2 and clang 3.7.
+* Boost backend: Boost.Context 1.58+
 
 ## Performance
 
@@ -49,4 +50,4 @@ Duration of 1 iteration on AMD Phenom II X4 920:
 
 Yes, Boost backend is 146 times faster.
 
-Thread backend is so slow because... switching threads is slow :P Boost backend is implemented without threads, using Boost.Coroutine and Boost.Context instead. To jump from one coroutine to another, it simply jumps to another stack - which is A LOT faster than switching threads.
+Thread backend is so slow because... switching threads is slow :P Boost backend is implemented without threads, using Boost.Context instead. To jump from one coroutine to another, it simply jumps to another stack - which is A LOT faster than switching threads.
