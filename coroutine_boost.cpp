@@ -17,7 +17,7 @@ namespace xx
 
 		coroutine_context() = default;
 
-		coroutine_context(ctx_fn fn, boost::context::stack_context sctx)
+		coroutine_context(ctx_fn* fn, boost::context::stack_context sctx)
 			: sctx(sctx)
 			, fctx(boost::context::make_fcontext(sctx.sp, sctx.size, (ctx_fn_intptr*) fn))
 		{}
