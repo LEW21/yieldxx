@@ -35,7 +35,7 @@ namespace xx
 
 	template <class T>
 	generator<T>::generator(generator<T>::body gen)
-		: value{new store_t<T>{}}
+		: value{std::make_unique<store_t<T>>()}
 		, coro{[value = &*value, gen](coroutine::yield&& yield) {
 			gen([value, yield](T&& v){
 				*value = std::forward<T>(v);

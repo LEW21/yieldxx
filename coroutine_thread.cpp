@@ -48,7 +48,7 @@ namespace xx
 	}
 
 	coroutine::coroutine(coroutine::body f)
-		: p(new coroutine_impl(std::move(f)))
+		: p(std::make_unique<coroutine_impl>(std::move(f)))
 	{}
 
 	bool coroutine::operator()()
