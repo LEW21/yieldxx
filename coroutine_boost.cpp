@@ -84,6 +84,7 @@ namespace xx
 	coroutine& coroutine::operator=(coroutine&& other)
 	{
 		p = std::move(other.p);
+		return *this;
 	}
 
 	bool coroutine::operator()()
