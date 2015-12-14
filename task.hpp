@@ -38,7 +38,7 @@ namespace xx
 	template <class T>
 	bool operator!=(const task& a, const task& b) {return !(a == b);}
 
-	task::task(std::shared_ptr<coroutine>&& coro, coroutine::yield&& yield)
+	inline task::task(std::shared_ptr<coroutine>&& coro, coroutine::yield&& yield)
 		: y{std::move(yield)}
 		, coro{std::move(coro)}
 	{}
