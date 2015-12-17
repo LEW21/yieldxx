@@ -4,8 +4,7 @@
 // Copyright 2015 by David Krauss.
 // This source is released under the MIT license, http://opensource.org/licenses/MIT
 
-#ifndef INCLUDED_CXX_FUNCTION_HPP
-#define INCLUDED_CXX_FUNCTION_HPP
+#pragma once
 
 #include <cassert>
 #include <cstring>
@@ -17,6 +16,8 @@
 #include <type_traits>
 #include <utility>
 
+namespace xx {
+namespace __private {
 namespace cxx_function {
 
 // Dispatch tag for in-place construction, for when explicit template arguments are unavailable (e.g. constructor calls).
@@ -1136,5 +1137,5 @@ constexpr auto && recover( erasure_ref && e ) {
 #endif
 
 }
-
-#endif
+}
+}
