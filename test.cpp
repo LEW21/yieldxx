@@ -139,5 +139,20 @@ int main()
 		{}
 	}
 
+	// Test single pass generator.
+	{
+		auto it = generator<int>{[val = 5](generator<int>::yield&& yield) mutable {
+			yield(val);
+			val = 0;
+		}};
+
+		assert(*it == 5);
+		++it;
+		assert(!it);
+
+		// for (auto i : gen) // shall not compile
+		//	assert(i == 5);
+	}
+
 	std::cout << "Passed!" << std::endl;
 }

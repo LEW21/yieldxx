@@ -9,12 +9,14 @@ namespace xx
 	{
 	public:
 		using generator = xx::generator<T>;
+		using yield = std::function<void(T)>;
+		using body  = __private::cxx_function::function<void(yield&&) const>;
 
-		typename generator::body gen;
+		body gen;
 
-		generated(typename generator::body g): gen(std::move(g)) {}
+		generated(body g): gen(std::move(g)) {}
 
-		operator typename generator::body() {return gen;}
+		operator body() {return gen;}
 
 		generator begin() const {return generator(gen);}
 		generator end() const {return generator();}

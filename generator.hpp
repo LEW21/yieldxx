@@ -11,7 +11,7 @@ namespace xx
 	struct generator
 	{
 		using yield = std::function<void(T)>;
-		using body  = std::function<void(yield&&)>;
+		using body  = __private::cxx_function::unique_function<void(yield&&) &&>;
 
 		generator() = default;
 		generator(body gen);
@@ -36,8 +36,8 @@ namespace xx
 	template <class T>
 	generator<T>::generator(generator<T>::body gen)
 		: value{std::make_unique<store_t<T>>()}
-		, coro{[value = &*value, gen](coroutine::yield&& yield) {
-			gen([value, yield](T&& v){
+		, coro{[value = &*value, gen = std::move(gen)](coroutine::yield&& yield) mutable {
+			std::move(gen)([value, yield](T&& v){
 				*value = std::forward<T>(v);
 				yield();
 			});

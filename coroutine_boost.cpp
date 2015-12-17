@@ -132,7 +132,8 @@ namespace xx
 		};
 		try
 		{
-			body(std::move(yield));
+			std::move(body)(std::move(yield));
+			body = coroutine::body{};
 		}
 		catch (coroutine::stop&) {}
 		catch (...) { exception = std::current_exception(); }

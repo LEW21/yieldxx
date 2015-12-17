@@ -3,6 +3,8 @@
 #include <functional>
 #include <memory>
 
+#include "cxx_function.hpp"
+
 namespace xx
 {
 	struct coroutine_impl;
@@ -10,7 +12,7 @@ namespace xx
 	struct coroutine
 	{
 		using yield = std::function<void()>;
-		using body  = std::function<void(yield&&)>;
+		using body  = __private::cxx_function::unique_function<void(yield&&) &&>;
 
 		class stop: public std::exception {};
 

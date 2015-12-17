@@ -67,7 +67,7 @@ namespace xx
 	{}
 
 	coroutine_impl::coroutine_impl(coroutine::body body)
-		: thread{[this, body]() {
+		: thread{[this, body = std::move(body)]() mutable {
 			gen.wait();
 			auto yield = [this]()
 			{
@@ -82,7 +82,8 @@ namespace xx
 			};
 			try
 			{
-				body(std::move(yield));
+				std::move(body)(std::move(yield));
+				body = coroutine::body{};
 			}
 			catch (coroutine::stop&) {}
 			catch (...) { exception = std::current_exception(); }

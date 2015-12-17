@@ -6,7 +6,7 @@ namespace xx
 {
 	struct task
 	{
-		using body = std::function<void(xx::task&&)>;
+		using body = __private::cxx_function::unique_function<void(xx::task&&) &&>;
 
 		static void spawn(body f);
 
@@ -30,7 +30,7 @@ namespace xx
 		friend bool operator==(const task& a, const task& b);
 	};
 
-	inline void spawn_task(task::body body) { task::spawn(body); }
+	inline void spawn_task(task::body body) { task::spawn(std::move(body)); }
 
 	template <class T>
 	bool operator==(const task& a, const task& b) {return a.coro == b.coro;}
@@ -46,8 +46,8 @@ namespace xx
 	inline void task::spawn(task::body b)
 	{
 		auto coro = std::make_shared<coroutine>();
-		*coro = coroutine{[coro, b](coroutine::yield&& yield) mutable{
-			b(task{std::move(coro), std::move(yield)});
+		*coro = coroutine{[coro, b = std::move(b)](coroutine::yield&& yield) mutable{
+			std::move(b)(task{std::move(coro), std::move(yield)});
 		}};
 		(*coro)();
 	}
